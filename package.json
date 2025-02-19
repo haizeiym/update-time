@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Timer utility for Cocos Creator 2.4 and 3.x",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
@@ -21,5 +22,11 @@
   "files": [
     "dist",
     "README.md"
-  ]
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  }
 }
