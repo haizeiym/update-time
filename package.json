@@ -1,0 +1,25 @@
+{
+  "name": "cocos-timer-util",
+  "version": "1.0.0",
+  "description": "Timer utility for Cocos Creator 2.4 and 3.x",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "cocos creator",
+    "timer",
+    "utility"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.5.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}
