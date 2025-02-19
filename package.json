@@ -1,9 +1,11 @@
 {
   "name": "cocos-timer-util",
+  "type": "module",
   "version": "1.0.2",
   "description": "Timer utility for Cocos Creator 2.4 and 3.x",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
@@ -23,6 +25,10 @@
     "README.md"
   ],
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   }
 }
