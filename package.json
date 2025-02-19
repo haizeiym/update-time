@@ -1,6 +1,6 @@
 {
   "name": "cocos-timer-util",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Timer utility for Cocos Creator 2.4 and 3.x",
   "main": "dist/index.js",
   "module": "dist/index.js",
