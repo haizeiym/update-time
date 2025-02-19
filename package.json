@@ -3,12 +3,20 @@
   "type": "module",
   "version": "1.0.3",
   "description": "Timer utility for Cocos Creator 2.4 and 3.x",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc",
-    "prepare": "npm run build"
+    "build": "npm run clean && npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "clean": "rimraf dist"
   },
   "keywords": [
     "cocos creator",
@@ -24,11 +32,7 @@
     "dist",
     "README.md"
   ],
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+  "dependencies": {
+    "rimraf": "^6.0.1"
   }
 }

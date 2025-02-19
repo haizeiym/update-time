@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "es2015",
-    "module": "es2015",
+    "module": "ESNext", // 生成 ESModule 格式
+    "target": "ES5",
     "moduleResolution": "node",
-    "outDir": "./dist",
-    "esModuleInterop": true,
-    "allowJs": true,
+    "esModuleInterop": true, // 使得 CommonJS 模块能够正确导入
+    "outDir": "./dist", // 输出目录
+    "declaration": true, // 生成类型声明文件
+    "declarationDir": "./dist/types", // 输出类型声明文件目录
     "strict": true,
-    "declaration": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "lib": [
       "es2015",
       "dom"
@@ -19,7 +18,6 @@
     "src/**/*"
   ],
   "exclude": [
-    "node_modules",
-    "dist"
+    "node_modules"
   ]
 }
