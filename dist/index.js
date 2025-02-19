@@ -1,7 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 let timeId = 0;
-class TimeU {
+export default class TimeU {
     /**
      * 添加一个计时器
      * @param duration 间隔时间(毫秒)
@@ -125,6 +123,5 @@ class TimeU {
         }
     }
 }
-exports.default = TimeU;
 TimeU._timeList = [];
 TimeU._objTimeMap = new Map();
