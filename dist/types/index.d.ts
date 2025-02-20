@@ -11,6 +11,10 @@ export default class TimeU {
      */
     static addTime(duration: number, loopcall: () => void, loopcount?: number, endcall?: () => void): number;
     /**
+     * 添加一个一次性计时器
+     */
+    static addTimeOnce(duration: number, callback: () => void): void;
+    /**
      * 移除指定ID的计时器
      */
     static removeTime(id: number): void;
@@ -22,6 +26,10 @@ export default class TimeU {
      * 为对象添加计时器
      */
     static addObjTime(obj: any, duration: number, callback: () => void, loopcount?: number, endcall?: () => void): number;
+    /**
+     * 为对象添加一次性计时器
+     */
+    static addObjTimeOnce(obj: any, duration: number, callback: () => void): void;
     /**
      * 移除对象的所有计时器
      */

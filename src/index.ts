@@ -37,6 +37,13 @@ export default class TimeU {
     }
 
     /**
+     * 添加一个一次性计时器
+     */
+    public static addTimeOnce(duration: number, callback: () => void) {
+        this.addTime(duration, callback, 1);
+    }
+
+    /**
      * 移除指定ID的计时器
      */
     public static removeTime(id: number) {
@@ -80,6 +87,13 @@ export default class TimeU {
         this._objTimeMap.get(key)?.add(id);
 
         return id;
+    }
+
+    /**
+     * 为对象添加一次性计时器
+     */
+    public static addObjTimeOnce(obj: any, duration: number, callback: () => void) {
+        this.addObjTime(obj, duration, callback, 1);
     }
 
     /**

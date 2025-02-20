@@ -25,6 +25,12 @@ var TimeU = /** @class */ (function () {
         return id;
     };
     /**
+     * 添加一个一次性计时器
+     */
+    TimeU.addTimeOnce = function (duration, callback) {
+        this.addTime(duration, callback, 1);
+    };
+    /**
      * 移除指定ID的计时器
      */
     TimeU.removeTime = function (id) {
@@ -66,6 +72,12 @@ var TimeU = /** @class */ (function () {
         // 记录计时器ID
         (_a = this._objTimeMap.get(key)) === null || _a === void 0 ? void 0 : _a.add(id);
         return id;
+    };
+    /**
+     * 为对象添加一次性计时器
+     */
+    TimeU.addObjTimeOnce = function (obj, duration, callback) {
+        this.addObjTime(obj, duration, callback, 1);
     };
     /**
      * 移除对象的所有计时器
