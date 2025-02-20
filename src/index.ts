@@ -10,7 +10,7 @@ interface TimerItem {
 
 let timeId: number = 0;
 
-export default class TimeU {
+export default class UTime {
     private static _timeList: TimerItem[] = [];
     private static _objTimeMap: Map<string, Set<number>> = new Map();
 
@@ -39,8 +39,8 @@ export default class TimeU {
     /**
      * 添加一个一次性计时器
      */
-    public static addTimeOnce(duration: number, callback: () => void) {
-        this.addTime(duration, callback, 1);
+    public static addTimeOnce(duration: number, callback: () => void): number {
+        return this.addTime(duration, callback, 1);
     }
 
     /**
@@ -92,8 +92,8 @@ export default class TimeU {
     /**
      * 为对象添加一次性计时器
      */
-    public static addObjTimeOnce(obj: any, duration: number, callback: () => void) {
-        this.addObjTime(obj, duration, callback, 1);
+    public static addObjTimeOnce(obj: any, duration: number, callback: () => void): number {
+        return this.addObjTime(obj, duration, callback, 1);
     }
 
     /**

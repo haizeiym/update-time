@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var timeId = 0;
-var TimeU = /** @class */ (function () {
-    function TimeU() {
+var UTime = /** @class */ (function () {
+    function UTime() {
     }
     /**
      * 添加一个计时器
@@ -12,7 +12,7 @@ var TimeU = /** @class */ (function () {
      * @param endcall 结束回调
      * @returns 计时器ID
      */
-    TimeU.addTime = function (duration, loopcall, loopcount, endcall) {
+    UTime.addTime = function (duration, loopcall, loopcount, endcall) {
         if (loopcount === void 0) { loopcount = Number.MAX_VALUE; }
         var id = timeId++;
         this._timeList.push({
@@ -29,13 +29,13 @@ var TimeU = /** @class */ (function () {
     /**
      * 添加一个一次性计时器
      */
-    TimeU.addTimeOnce = function (duration, callback) {
-        this.addTime(duration, callback, 1);
+    UTime.addTimeOnce = function (duration, callback) {
+        return this.addTime(duration, callback, 1);
     };
     /**
      * 移除指定ID的计时器
      */
-    TimeU.removeTime = function (id) {
+    UTime.removeTime = function (id) {
         var index = this._timeList.findIndex(function (item) { return item.id === id; });
         if (index !== -1) {
             this._timeList.splice(index, 1);
@@ -44,14 +44,14 @@ var TimeU = /** @class */ (function () {
     /**
      * 获取对象的唯一标识
      */
-    TimeU.getObjectId = function (obj) {
+    UTime.getObjectId = function (obj) {
         // 支持 Cocos Creator 2.4 和 3.x
         return obj.uuid || obj._id || '';
     };
     /**
      * 为对象添加计时器
      */
-    TimeU.addObjTime = function (obj, duration, callback, loopcount, endcall) {
+    UTime.addObjTime = function (obj, duration, callback, loopcount, endcall) {
         var _this = this;
         var _a;
         if (loopcount === void 0) { loopcount = Number.MAX_VALUE; }
@@ -78,13 +78,13 @@ var TimeU = /** @class */ (function () {
     /**
      * 为对象添加一次性计时器
      */
-    TimeU.addObjTimeOnce = function (obj, duration, callback) {
-        this.addObjTime(obj, duration, callback, 1);
+    UTime.addObjTimeOnce = function (obj, duration, callback) {
+        return this.addObjTime(obj, duration, callback, 1);
     };
     /**
      * 移除对象的所有计时器
      */
-    TimeU.removeObjTime = function (obj) {
+    UTime.removeObjTime = function (obj) {
         var _this = this;
         var key = this.getObjectId(obj);
         if (!key) {
@@ -101,7 +101,7 @@ var TimeU = /** @class */ (function () {
     /**
      * 移除对象的指定计时器
      */
-    TimeU.removeObjTimeById = function (obj, id) {
+    UTime.removeObjTimeById = function (obj, id) {
         var key = this.getObjectId(obj);
         if (!key) {
             console.error("Object has no uuid or _id");
@@ -116,7 +116,7 @@ var TimeU = /** @class */ (function () {
     /**
      * 清除所有计时器
      */
-    TimeU.clear = function () {
+    UTime.clear = function () {
         this._timeList = [];
         this._objTimeMap.clear();
         timeId = 0;
@@ -124,7 +124,7 @@ var TimeU = /** @class */ (function () {
     /**
      * 更新所有计时器
      */
-    TimeU.update = function () {
+    UTime.update = function () {
         var _a;
         var now = Date.now();
         for (var i = this._timeList.length - 1; i >= 0; i--) {
@@ -142,8 +142,8 @@ var TimeU = /** @class */ (function () {
             }
         }
     };
-    TimeU._timeList = [];
-    TimeU._objTimeMap = new Map();
-    return TimeU;
+    UTime._timeList = [];
+    UTime._objTimeMap = new Map();
+    return UTime;
 }());
-exports.default = TimeU;
+exports.default = UTime;

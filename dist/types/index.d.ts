@@ -1,4 +1,4 @@
-export default class TimeU {
+export default class UTime {
     private static _timeList;
     private static _objTimeMap;
     /**
@@ -13,7 +13,7 @@ export default class TimeU {
     /**
      * 添加一个一次性计时器
      */
-    static addTimeOnce(duration: number, callback: () => void): void;
+    static addTimeOnce(duration: number, callback: () => void): number;
     /**
      * 移除指定ID的计时器
      */
@@ -29,7 +29,7 @@ export default class TimeU {
     /**
      * 为对象添加一次性计时器
      */
-    static addObjTimeOnce(obj: any, duration: number, callback: () => void): void;
+    static addObjTimeOnce(obj: any, duration: number, callback: () => void): number;
     /**
      * 移除对象的所有计时器
      */
