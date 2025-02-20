@@ -39,4 +39,3 @@ export default class TimeU {
      */
     static update(): void;
 }
-//# sourceMappingURL=index.d.ts.map

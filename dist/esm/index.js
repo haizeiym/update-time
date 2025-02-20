@@ -133,4 +133,3 @@ var TimeU = /** @class */ (function () {
     return TimeU;
 }());
 export default TimeU;
-//# sourceMappingURL=index.js.map
