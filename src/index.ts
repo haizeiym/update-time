@@ -117,18 +117,21 @@ export default class UTime {
     /**
      * 移除对象的指定计时器
      */
-    public static removeObjTimeById(obj: any, id: number) {
+    public static removeObjTimeById(obj: any, id: number):number {
         const key = this.getObjectId(obj);
         if (!key) {
             console.error("Object has no uuid or _id");
-            return;
+            return -1;
         }
-
+        if(id === -1) {
+            return -1;
+        }
         const timerSet = this._objTimeMap.get(key);
         if (timerSet) {
             timerSet.delete(id);
             this.removeTime(id);
         }
+        return -1;
     }
 
     /**
