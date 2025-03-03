@@ -105,13 +105,17 @@ var UTime = /** @class */ (function () {
         var key = this.getObjectId(obj);
         if (!key) {
             console.error("Object has no uuid or _id");
-            return;
+            return -1;
+        }
+        if (id === -1) {
+            return -1;
         }
         var timerSet = this._objTimeMap.get(key);
         if (timerSet) {
             timerSet.delete(id);
             this.removeTime(id);
         }
+        return -1;
     };
     /**
      * 清除所有计时器

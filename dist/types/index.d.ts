@@ -37,7 +37,7 @@ export default class UTime {
     /**
      * 移除对象的指定计时器
      */
-    static removeObjTimeById(obj: any, id: number): void;
+    static removeObjTimeById(obj: any, id: number): number;
     /**
      * 清除所有计时器
      */
