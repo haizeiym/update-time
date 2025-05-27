@@ -23,7 +23,7 @@ export default class UTime {
      * @returns 计时器ID
      */
     public static addTime(duration: number, loopcall: () => void, loopcount: number = Number.MAX_VALUE, endcall?: () => void): number {
-        const id = timeId++;
+        const id = ++timeId;
         this._timeList.push({
             id,
             duration,
