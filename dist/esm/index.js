@@ -12,7 +12,7 @@ var UTime = /** @class */ (function () {
      */
     UTime.addTime = function (duration, loopcall, loopcount, endcall) {
         if (loopcount === void 0) { loopcount = Number.MAX_VALUE; }
-        var id = timeId++;
+        var id = ++timeId;
         this._timeList.push({
             id: id,
             duration: duration,
