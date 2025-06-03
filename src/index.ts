@@ -6,13 +6,15 @@ interface TimerItem {
     loopcountcur: number;
     loopcall: () => void;
     endcall?: () => void;
+    next?: TimerItem;
 }
 
 let timeId: number = 0;
 
 export default class UTime {
-    private static _timeList: TimerItem[] = [];
+    private static _timeList: TimerItem | undefined = undefined;
     private static _objTimeMap: Map<string, Set<number>> = new Map();
+    private static _hasActiveTimers: boolean = false;
 
     /**
      * 添加一个计时器
@@ -24,15 +26,18 @@ export default class UTime {
      */
     public static addTime(duration: number, loopcall: () => void, loopcount: number = Number.MAX_VALUE, endcall?: () => void): number {
         const id = ++timeId;
-        this._timeList.push({
+        const newTimer: TimerItem = {
             id,
             duration,
             curtime: Date.now(),
             loopcall,
             loopcount,
             loopcountcur: 0,
-            endcall
-        });
+            endcall,
+            next: this._timeList || undefined
+        };
+        this._timeList = newTimer;
+        this._hasActiveTimers = true;
         return id;
     }
 
@@ -47,9 +52,21 @@ export default class UTime {
      * 移除指定ID的计时器
      */
     public static removeTime(id: number) {
-        const index = this._timeList.findIndex((item) => item.id === id);
-        if (index !== -1) {
-            this._timeList.splice(index, 1);
+        let current: TimerItem | undefined = this._timeList;
+        let prev: TimerItem | null = null;
+
+        while (current) {
+            if (current.id === id) {
+                if (prev) {
+                    prev.next = current.next;
+                } else {
+                    this._timeList = current.next;
+                }
+                this._hasActiveTimers = this._timeList !== undefined;
+                return;
+            }
+            prev = current;
+            current = current.next;
         }
     }
 
@@ -117,18 +134,19 @@ export default class UTime {
     /**
      * 移除对象的指定计时器
      */
-    public static removeObjTimeById(obj: any, id: number):number {
+    public static removeObjTimeById(obj: any, id: number): number {
         const key = this.getObjectId(obj);
-        if (!key) {
+        if (!key || id === -1) {
             console.error("Object has no uuid or _id");
             return -1;
         }
-        if(id === -1) {
-            return -1;
-        }
+
         const timerSet = this._objTimeMap.get(key);
         if (timerSet) {
             timerSet.delete(id);
+            if (timerSet.size === 0) {
+                this._objTimeMap.delete(key);
+            }
             this.removeTime(id);
         }
         return -1;
@@ -138,8 +156,9 @@ export default class UTime {
      * 清除所有计时器
      */
     public static clear() {
-        this._timeList = [];
+        this._timeList = undefined;
         this._objTimeMap.clear();
+        this._hasActiveTimers = false;
         timeId = 0;
     }
 
@@ -147,20 +166,36 @@ export default class UTime {
      * 更新所有计时器
      */
     public static update() {
-        const now = Date.now();
-        for (let i = this._timeList.length - 1; i >= 0; i--) {
-            const item = this._timeList[i];
-            if (now - item.curtime >= item.duration) {
-                item.loopcall();
-                item.loopcountcur++;
+        if (!this._hasActiveTimers) return;
 
-                if (item.loopcount > item.loopcountcur) {
-                    item.curtime = now;
+        const now = Date.now();
+        let current: TimerItem | undefined = this._timeList;
+        let prev: TimerItem | null = null;
+
+        while (current) {
+            if (now - current.curtime >= current.duration) {
+                current.loopcall();
+                current.loopcountcur++;
+
+                if (current.loopcount > current.loopcountcur) {
+                    current.curtime = now;
+                    prev = current;
+                    current = current.next;
                 } else {
-                    item.endcall?.();
-                    this._timeList.splice(i, 1);
+                    current.endcall?.();
+                    if (prev) {
+                        prev.next = current.next;
+                    } else {
+                        this._timeList = current.next;
+                    }
+                    current = current.next;
                 }
+            } else {
+                prev = current;
+                current = current.next;
             }
         }
+
+        this._hasActiveTimers = this._timeList !== undefined;
     }
 }
