@@ -15,15 +15,18 @@ var UTime = /** @class */ (function () {
     UTime.addTime = function (duration, loopcall, loopcount, endcall) {
         if (loopcount === void 0) { loopcount = Number.MAX_VALUE; }
         var id = ++timeId;
-        this._timeList.push({
+        var newTimer = {
             id: id,
             duration: duration,
             curtime: Date.now(),
             loopcall: loopcall,
             loopcount: loopcount,
             loopcountcur: 0,
-            endcall: endcall
-        });
+            endcall: endcall,
+            next: this._timeList || undefined
+        };
+        this._timeList = newTimer;
+        this._hasActiveTimers = true;
         return id;
     };
     /**
@@ -36,9 +39,21 @@ var UTime = /** @class */ (function () {
      * 移除指定ID的计时器
      */
     UTime.removeTime = function (id) {
-        var index = this._timeList.findIndex(function (item) { return item.id === id; });
-        if (index !== -1) {
-            this._timeList.splice(index, 1);
+        var current = this._timeList;
+        var prev = null;
+        while (current) {
+            if (current.id === id) {
+                if (prev) {
+                    prev.next = current.next;
+                }
+                else {
+                    this._timeList = current.next;
+                }
+                this._hasActiveTimers = this._timeList !== undefined;
+                return;
+            }
+            prev = current;
+            current = current.next;
         }
     };
     /**
@@ -103,16 +118,16 @@ var UTime = /** @class */ (function () {
      */
     UTime.removeObjTimeById = function (obj, id) {
         var key = this.getObjectId(obj);
-        if (!key) {
+        if (!key || id === -1) {
             console.error("Object has no uuid or _id");
-            return -1;
-        }
-        if (id === -1) {
             return -1;
         }
         var timerSet = this._objTimeMap.get(key);
         if (timerSet) {
             timerSet.delete(id);
+            if (timerSet.size === 0) {
+                this._objTimeMap.delete(key);
+            }
             this.removeTime(id);
         }
         return -1;
@@ -121,8 +136,9 @@ var UTime = /** @class */ (function () {
      * 清除所有计时器
      */
     UTime.clear = function () {
-        this._timeList = [];
+        this._timeList = undefined;
         this._objTimeMap.clear();
+        this._hasActiveTimers = false;
         timeId = 0;
     };
     /**
@@ -130,24 +146,41 @@ var UTime = /** @class */ (function () {
      */
     UTime.update = function () {
         var _a;
+        if (!this._hasActiveTimers)
+            return;
         var now = Date.now();
-        for (var i = this._timeList.length - 1; i >= 0; i--) {
-            var item = this._timeList[i];
-            if (now - item.curtime >= item.duration) {
-                item.loopcall();
-                item.loopcountcur++;
-                if (item.loopcount > item.loopcountcur) {
-                    item.curtime = now;
+        var current = this._timeList;
+        var prev = null;
+        while (current) {
+            if (now - current.curtime >= current.duration) {
+                current.loopcall();
+                current.loopcountcur++;
+                if (current.loopcount > current.loopcountcur) {
+                    current.curtime = now;
+                    prev = current;
+                    current = current.next;
                 }
                 else {
-                    (_a = item.endcall) === null || _a === void 0 ? void 0 : _a.call(item);
-                    this._timeList.splice(i, 1);
+                    (_a = current.endcall) === null || _a === void 0 ? void 0 : _a.call(current);
+                    if (prev) {
+                        prev.next = current.next;
+                    }
+                    else {
+                        this._timeList = current.next;
+                    }
+                    current = current.next;
                 }
             }
+            else {
+                prev = current;
+                current = current.next;
+            }
         }
+        this._hasActiveTimers = this._timeList !== undefined;
     };
-    UTime._timeList = [];
+    UTime._timeList = undefined;
     UTime._objTimeMap = new Map();
+    UTime._hasActiveTimers = false;
     return UTime;
 }());
 exports.default = UTime;

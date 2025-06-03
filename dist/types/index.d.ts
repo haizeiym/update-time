@@ -1,6 +1,7 @@
 export default class UTime {
     private static _timeList;
     private static _objTimeMap;
+    private static _hasActiveTimers;
     /**
      * 添加一个计时器
      * @param duration 间隔时间(毫秒)
