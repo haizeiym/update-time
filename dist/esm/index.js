@@ -150,7 +150,7 @@ var UTime = /** @class */ (function () {
         var current = this._timeList;
         var prev = null;
         while (current) {
-            if (now - current.curtime >= current.duration) {
+            if (current.duration <= 0 || now - current.curtime >= current.duration) {
                 current.loopcall();
                 current.loopcountcur++;
                 if (current.loopcount > current.loopcountcur) {
