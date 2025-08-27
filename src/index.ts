@@ -173,7 +173,7 @@ export default class UTime {
         let prev: TimerItem | null = null;
 
         while (current) {
-            if (now - current.curtime >= current.duration) {
+            if (current.duration <= 0 || now - current.curtime >= current.duration) {
                 current.loopcall();
                 current.loopcountcur++;
 
