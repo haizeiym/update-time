@@ -13,7 +13,7 @@ let timeId: number = 0;
 
 export default class UTime {
     private static _timeList: TimerItem | undefined = undefined;
-    private static _objTimeMap: Map<string, Set<number>> = new Map();
+    private static _objTimeMap: Map<object, Set<number>> = new Map();
     private static _hasActiveTimers: boolean = false;
 
     /**
@@ -71,37 +71,30 @@ export default class UTime {
     }
 
     /**
-     * 获取对象的唯一标识
-     */
-    private static getObjectId(obj: any): string {
-        // 支持 Cocos Creator 2.4 和 3.x
-        return obj.uuid || obj._id || '';
-    }
-
-    /**
      * 为对象添加计时器
      */
     public static addObjTime(obj: any, duration: number, callback: () => void, loopcount: number = Number.MAX_VALUE, endcall?: () => void): number {
-        const key = this.getObjectId(obj);
-        if (!key) {
-            console.error("Object has no uuid or _id");
+        if (!obj || typeof obj !== 'object') {
+            console.error("Invalid object provided for timer");
             return -1;
         }
 
-        // 创建或获取对象的计时器集合
-        if (!this._objTimeMap.has(key)) {
-            this._objTimeMap.set(key, new Set());
+        if (!this._objTimeMap.has(obj)) {
+            this._objTimeMap.set(obj, new Set());
         }
 
-        // 添加计时器
         const id = this.addTime(duration, callback, loopcount, () => {
-            // 计时器结束时从集合中移除
-            this._objTimeMap.get(key)?.delete(id);
+            const timerSet = this._objTimeMap.get(obj);
+            if (timerSet) {
+                timerSet.delete(id);
+                if (timerSet.size === 0) {
+                    this._objTimeMap.delete(obj);
+                }
+            }
             endcall?.();
         });
 
-        // 记录计时器ID
-        this._objTimeMap.get(key)?.add(id);
+        this._objTimeMap.get(obj)?.add(id);
 
         return id;
     }
@@ -110,6 +103,10 @@ export default class UTime {
      * 为对象添加一次性计时器
      */
     public static addObjTimeOnce(obj: any, duration: number, callback: () => void): number {
+        if (!obj || typeof obj !== 'object') {
+            console.error("Invalid object provided for timer");
+            return -1;
+        }
         return this.addObjTime(obj, duration, callback, 1);
     }
 
@@ -117,17 +114,15 @@ export default class UTime {
      * 移除对象的所有计时器
      */
     public static removeObjTime(obj: any) {
-        const key = this.getObjectId(obj);
-        if (!key) {
-            console.error("Object has no uuid or _id");
+        if (!obj || typeof obj !== 'object') {
+            console.error("Invalid object provided for timer removal");
             return;
         }
 
-        const timerSet = this._objTimeMap.get(key);
+        const timerSet = this._objTimeMap.get(obj);
         if (timerSet) {
-            // 移除所有计时器
             timerSet.forEach((id) => this.removeTime(id));
-            this._objTimeMap.delete(key);
+            this._objTimeMap.delete(obj);
         }
     }
 
@@ -135,17 +130,16 @@ export default class UTime {
      * 移除对象的指定计时器
      */
     public static removeObjTimeById(obj: any, id: number): number {
-        const key = this.getObjectId(obj);
-        if (!key || id === -1) {
-            console.error("Object has no uuid or _id");
+        if (!obj || typeof obj !== 'object' || id === -1) {
+            console.error("Invalid object or timer ID provided");
             return -1;
         }
 
-        const timerSet = this._objTimeMap.get(key);
+        const timerSet = this._objTimeMap.get(obj);
         if (timerSet) {
             timerSet.delete(id);
             if (timerSet.size === 0) {
-                this._objTimeMap.delete(key);
+                this._objTimeMap.delete(obj);
             }
             this.removeTime(id);
         }
