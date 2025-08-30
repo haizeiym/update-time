@@ -15,17 +15,26 @@ var UTime = /** @class */ (function () {
     UTime.addTime = function (duration, loopcall, loopcount, endcall) {
         if (loopcount === void 0) { loopcount = Number.MAX_VALUE; }
         var id = ++timeId;
+        var now = Date.now();
         var newTimer = {
             id: id,
             duration: duration,
-            curtime: Date.now(),
+            curtime: now,
             loopcall: loopcall,
             loopcount: loopcount,
             loopcountcur: 0,
             endcall: endcall,
-            next: this._timeList || undefined
+            next: undefined
         };
-        this._timeList = newTimer;
+        // 如果正在更新中，将计时器加入待处理队列
+        if (this._isUpdating) {
+            this._pendingTimers.push(newTimer);
+        }
+        else {
+            // 直接添加到链表头部
+            newTimer.next = this._timeList || undefined;
+            this._timeList = newTimer;
+        }
         this._hasActiveTimers = true;
         return id;
     };
@@ -133,7 +142,39 @@ var UTime = /** @class */ (function () {
         this._timeList = undefined;
         this._objTimeMap.clear();
         this._hasActiveTimers = false;
+        this._isUpdating = false;
+        this._pendingTimers.length = 0;
         timeId = 0;
+    };
+    /**
+     * 清理无效的对象引用（可选的手动清理）
+     */
+    UTime.cleanup = function () {
+        var _this = this;
+        // 清理可能已经被垃圾回收的对象
+        this._objTimeMap.forEach(function (timerSet, obj) {
+            if (!obj || timerSet.size === 0) {
+                _this._objTimeMap.delete(obj);
+            }
+        });
+    };
+    /**
+     * 获取统计信息
+     */
+    UTime.getStats = function () {
+        var activeTimerCount = 0;
+        var current = this._timeList;
+        while (current) {
+            activeTimerCount++;
+            current = current.next;
+        }
+        return {
+            activeTimers: activeTimerCount,
+            pendingTimers: this._pendingTimers.length,
+            objectTimers: this._objTimeMap.size,
+            isUpdating: this._isUpdating,
+            hasActiveTimers: this._hasActiveTimers
+        };
     };
     /**
      * 更新所有计时器
@@ -142,27 +183,29 @@ var UTime = /** @class */ (function () {
         var _a;
         if (!this._hasActiveTimers)
             return;
+        this._isUpdating = true;
         var now = Date.now();
         var current = this._timeList;
         var prev = null;
         while (current) {
             if (current.duration <= 0 || now - current.curtime >= current.duration) {
+                var nextNode = current.next;
                 current.loopcall();
                 current.loopcountcur++;
                 if (current.loopcount > current.loopcountcur) {
                     current.curtime = now;
                     prev = current;
-                    current = current.next;
+                    current = nextNode;
                 }
                 else {
                     (_a = current.endcall) === null || _a === void 0 ? void 0 : _a.call(current);
                     if (prev) {
-                        prev.next = current.next;
+                        prev.next = nextNode;
                     }
                     else {
-                        this._timeList = current.next;
+                        this._timeList = nextNode;
                     }
-                    current = current.next;
+                    current = nextNode;
                 }
             }
             else {
@@ -170,11 +213,22 @@ var UTime = /** @class */ (function () {
                 current = current.next;
             }
         }
+        this._isUpdating = false;
+        if (this._pendingTimers.length > 0) {
+            for (var _i = 0, _b = this._pendingTimers; _i < _b.length; _i++) {
+                var timer = _b[_i];
+                timer.next = this._timeList || undefined;
+                this._timeList = timer;
+            }
+            this._pendingTimers.length = 0;
+        }
         this._hasActiveTimers = this._timeList !== undefined;
     };
     UTime._timeList = undefined;
     UTime._objTimeMap = new Map();
     UTime._hasActiveTimers = false;
+    UTime._isUpdating = false;
+    UTime._pendingTimers = [];
     return UTime;
 }());
 exports.default = UTime;

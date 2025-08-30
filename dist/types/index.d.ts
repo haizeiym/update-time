@@ -2,6 +2,8 @@ export default class UTime {
     private static _timeList;
     private static _objTimeMap;
     private static _hasActiveTimers;
+    private static _isUpdating;
+    private static _pendingTimers;
     /**
      * 添加一个计时器
      * @param duration 间隔时间(毫秒)
@@ -39,6 +41,20 @@ export default class UTime {
      * 清除所有计时器
      */
     static clear(): void;
+    /**
+     * 清理无效的对象引用（可选的手动清理）
+     */
+    static cleanup(): void;
+    /**
+     * 获取统计信息
+     */
+    static getStats(): {
+        activeTimers: number;
+        pendingTimers: number;
+        objectTimers: number;
+        isUpdating: boolean;
+        hasActiveTimers: boolean;
+    };
     /**
      * 更新所有计时器
      */
