@@ -20,10 +20,6 @@ export default class UTime {
      */
     static removeTime(id: number): void;
     /**
-     * 获取对象的唯一标识
-     */
-    private static getObjectId;
-    /**
      * 为对象添加计时器
      */
     static addObjTime(obj: any, duration: number, callback: () => void, loopcount?: number, endcall?: () => void): number;
