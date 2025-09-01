@@ -88,7 +88,11 @@ export default class UTime {
      */
     public static addObjTime(obj: any, duration: number, callback: () => void, loopcount: number = Number.MAX_VALUE, endcall?: () => void): number {
         if (!obj || typeof obj !== 'object') {
-            console.error("Invalid object provided for timer");
+            if (!obj) {
+                console.error("addObjTime: Object parameter is null or undefined");
+            } else {
+                console.error(`addObjTime: Object parameter must be an object, got ${typeof obj}`);
+            }
             return -1;
         }
 
@@ -117,7 +121,11 @@ export default class UTime {
      */
     public static addObjTimeOnce(obj: any, duration: number, callback: () => void): number {
         if (!obj || typeof obj !== 'object') {
-            console.error("Invalid object provided for timer");
+            if (!obj) {
+                console.error("addObjTimeOnce: Object parameter is null or undefined");
+            } else {
+                console.error(`addObjTimeOnce: Object parameter must be an object, got ${typeof obj}`);
+            }
             return -1;
         }
         return this.addObjTime(obj, duration, callback, 1);
@@ -128,7 +136,11 @@ export default class UTime {
      */
     public static removeObjTime(obj: any) {
         if (!obj || typeof obj !== 'object') {
-            console.error("Invalid object provided for timer removal");
+            if (!obj) {
+                console.error("removeObjTime: Object parameter is null or undefined");
+            } else {
+                console.error(`removeObjTime: Object parameter must be an object, got ${typeof obj}`);
+            }
             return;
         }
 
@@ -144,7 +156,13 @@ export default class UTime {
      */
     public static removeObjTimeById(obj: any, id: number): number {
         if (!obj || typeof obj !== 'object' || id === -1) {
-            console.error("Invalid object or timer ID provided");
+            if (!obj) {
+                console.error("removeObjTimeById: Object parameter is null or undefined");
+            } else if (typeof obj !== 'object') {
+                console.error(`removeObjTimeById: Object parameter must be an object, got ${typeof obj}`);
+            } else if (id === -1) {
+                console.error("removeObjTimeById: Timer ID cannot be -1 (invalid ID)");
+            }
             return -1;
         }
 
