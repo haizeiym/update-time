@@ -71,7 +71,12 @@ var UTime = /** @class */ (function () {
         var _a;
         if (loopcount === void 0) { loopcount = Number.MAX_VALUE; }
         if (!obj || typeof obj !== 'object') {
-            console.error("Invalid object provided for timer");
+            if (!obj) {
+                console.error("addObjTime: Object parameter is null or undefined");
+            }
+            else {
+                console.error("addObjTime: Object parameter must be an object, got ".concat(typeof obj));
+            }
             return -1;
         }
         if (!this._objTimeMap.has(obj)) {
@@ -95,7 +100,12 @@ var UTime = /** @class */ (function () {
      */
     UTime.addObjTimeOnce = function (obj, duration, callback) {
         if (!obj || typeof obj !== 'object') {
-            console.error("Invalid object provided for timer");
+            if (!obj) {
+                console.error("addObjTimeOnce: Object parameter is null or undefined");
+            }
+            else {
+                console.error("addObjTimeOnce: Object parameter must be an object, got ".concat(typeof obj));
+            }
             return -1;
         }
         return this.addObjTime(obj, duration, callback, 1);
@@ -106,7 +116,12 @@ var UTime = /** @class */ (function () {
     UTime.removeObjTime = function (obj) {
         var _this = this;
         if (!obj || typeof obj !== 'object') {
-            console.error("Invalid object provided for timer removal");
+            if (!obj) {
+                console.error("removeObjTime: Object parameter is null or undefined");
+            }
+            else {
+                console.error("removeObjTime: Object parameter must be an object, got ".concat(typeof obj));
+            }
             return;
         }
         var timerSet = this._objTimeMap.get(obj);
@@ -120,7 +135,15 @@ var UTime = /** @class */ (function () {
      */
     UTime.removeObjTimeById = function (obj, id) {
         if (!obj || typeof obj !== 'object' || id === -1) {
-            console.error("Invalid object or timer ID provided");
+            if (!obj) {
+                console.error("removeObjTimeById: Object parameter is null or undefined");
+            }
+            else if (typeof obj !== 'object') {
+                console.error("removeObjTimeById: Object parameter must be an object, got ".concat(typeof obj));
+            }
+            else if (id === -1) {
+                console.error("removeObjTimeById: Timer ID cannot be -1 (invalid ID)");
+            }
             return -1;
         }
         var timerSet = this._objTimeMap.get(obj);
