@@ -58,6 +58,10 @@ var UTime = /** @class */ (function () {
                 else {
                     this._timeList = current.next;
                 }
+                // 清理回调函数引用，帮助垃圾回收
+                current.loopcall = function () { };
+                current.endcall = undefined;
+                current.next = undefined;
                 this._hasActiveTimers = this._timeList !== undefined;
                 return;
             }
@@ -162,6 +166,21 @@ var UTime = /** @class */ (function () {
      * 清除所有计时器
      */
     UTime.clear = function () {
+        // 清理所有计时器的回调函数引用
+        var current = this._timeList;
+        while (current) {
+            current.loopcall = function () { };
+            current.endcall = undefined;
+            var next = current.next;
+            current.next = undefined;
+            current = next;
+        }
+        // 清理待处理队列中的计时器
+        this._pendingTimers.forEach(function (timer) {
+            timer.loopcall = function () { };
+            timer.endcall = undefined;
+            timer.next = undefined;
+        });
         this._timeList = undefined;
         this._objTimeMap.clear();
         this._hasActiveTimers = false;
