@@ -75,6 +75,12 @@ export default class UTime {
                 } else {
                     this._timeList = current.next;
                 }
+                
+                // 清理回调函数引用，帮助垃圾回收
+                current.loopcall = () => {};
+                current.endcall = undefined;
+                current.next = undefined;
+                
                 this._hasActiveTimers = this._timeList !== undefined;
                 return;
             }
@@ -181,6 +187,23 @@ export default class UTime {
      * 清除所有计时器
      */
     public static clear() {
+        // 清理所有计时器的回调函数引用
+        let current: TimerItem | undefined = this._timeList;
+        while (current) {
+            current.loopcall = () => {};
+            current.endcall = undefined;
+            const next = current.next;
+            current.next = undefined;
+            current = next;
+        }
+        
+        // 清理待处理队列中的计时器
+        this._pendingTimers.forEach(timer => {
+            timer.loopcall = () => {};
+            timer.endcall = undefined;
+            timer.next = undefined;
+        });
+        
         this._timeList = undefined;
         this._objTimeMap.clear();
         this._hasActiveTimers = false;
