@@ -40,7 +40,7 @@ var UTime = /** @class */ (function () {
      * 添加一个一次性计时器
      */
     UTime.addTimeOnce = function (duration, callback) {
-        return this.addTime(duration, callback, 1);
+        return this.addTime(duration, callback, 0);
     };
     /**
      * 移除指定ID的计时器
@@ -118,7 +118,7 @@ var UTime = /** @class */ (function () {
             }
             return -1;
         }
-        return this.addObjTime(obj, duration, callback, 1);
+        return this.addObjTime(obj, duration, callback, 0);
     };
     /**
      * 移除对象的所有计时器
@@ -150,9 +150,6 @@ var UTime = /** @class */ (function () {
             }
             else if (typeof obj !== 'object') {
                 console.error("removeObjTimeById: Object parameter must be an object, got ".concat(typeof obj));
-            }
-            else if (id === -1) {
-                console.error("removeObjTimeById: Timer ID cannot be -1 (invalid ID)");
             }
             return -1;
         }
@@ -246,7 +243,7 @@ var UTime = /** @class */ (function () {
         var current = this._timeList;
         var prev = null;
         while (current) {
-            if (current.duration <= 0 || now - current.curtime >= current.duration) {
+            if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 var nextNode = current.next;
                 current.loopcall();
                 current.loopcountcur++;
