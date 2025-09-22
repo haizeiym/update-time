@@ -62,6 +62,12 @@ var UTime = /** @class */ (function () {
                 current.loopcall = function () { };
                 current.endcall = undefined;
                 current.next = undefined;
+                // 清理其他属性，确保完全失效
+                current.id = -1;
+                current.duration = 0;
+                current.curtime = 0;
+                current.loopcount = 0;
+                current.loopcountcur = 0;
                 this._hasActiveTimers = this._timeList !== undefined;
                 return;
             }
@@ -173,6 +179,12 @@ var UTime = /** @class */ (function () {
             current.endcall = undefined;
             var next = current.next;
             current.next = undefined;
+            // 清理其他属性，确保完全失效
+            current.id = -1;
+            current.duration = 0;
+            current.curtime = 0;
+            current.loopcount = 0;
+            current.loopcountcur = 0;
             current = next;
         }
         // 清理待处理队列中的计时器
@@ -180,6 +192,12 @@ var UTime = /** @class */ (function () {
             timer.loopcall = function () { };
             timer.endcall = undefined;
             timer.next = undefined;
+            // 清理其他属性，确保完全失效
+            timer.id = -1;
+            timer.duration = 0;
+            timer.curtime = 0;
+            timer.loopcount = 0;
+            timer.loopcountcur = 0;
         });
         this._timeList = undefined;
         this._objTimeMap.clear();
