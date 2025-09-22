@@ -58,7 +58,7 @@ export default class UTime {
      * 添加一个一次性计时器
      */
     public static addTimeOnce(duration: number, callback: () => void): number {
-        return this.addTime(duration, callback, 1);
+        return this.addTime(duration, callback, 0);
     }
 
     /**
@@ -141,7 +141,7 @@ export default class UTime {
             }
             return -1;
         }
-        return this.addObjTime(obj, duration, callback, 1);
+        return this.addObjTime(obj, duration, callback, 0);
     }
 
     /**
@@ -173,8 +173,6 @@ export default class UTime {
                 console.error("removeObjTimeById: Object parameter is null or undefined");
             } else if (typeof obj !== 'object') {
                 console.error(`removeObjTimeById: Object parameter must be an object, got ${typeof obj}`);
-            } else if (id === -1) {
-                console.error("removeObjTimeById: Timer ID cannot be -1 (invalid ID)");
             }
             return -1;
         }
@@ -278,7 +276,7 @@ export default class UTime {
         let prev: TimerItem | null = null;
 
         while (current) {
-            if (current.duration <= 0 || now - current.curtime >= current.duration) {
+            if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 const nextNode = current.next;
                 
                 current.loopcall();
