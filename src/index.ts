@@ -81,6 +81,13 @@ export default class UTime {
                 current.endcall = undefined;
                 current.next = undefined;
                 
+                // 清理其他属性，确保完全失效
+                current.id = -1;
+                current.duration = 0;
+                current.curtime = 0;
+                current.loopcount = 0;
+                current.loopcountcur = 0;
+                
                 this._hasActiveTimers = this._timeList !== undefined;
                 return;
             }
@@ -194,6 +201,14 @@ export default class UTime {
             current.endcall = undefined;
             const next = current.next;
             current.next = undefined;
+            
+            // 清理其他属性，确保完全失效
+            current.id = -1;
+            current.duration = 0;
+            current.curtime = 0;
+            current.loopcount = 0;
+            current.loopcountcur = 0;
+            
             current = next;
         }
         
@@ -202,6 +217,13 @@ export default class UTime {
             timer.loopcall = () => {};
             timer.endcall = undefined;
             timer.next = undefined;
+            
+            // 清理其他属性，确保完全失效
+            timer.id = -1;
+            timer.duration = 0;
+            timer.curtime = 0;
+            timer.loopcount = 0;
+            timer.loopcountcur = 0;
         });
         
         this._timeList = undefined;
