@@ -86,7 +86,7 @@ export default class UTime {
                     this._timeList = current.next;
                 }
                 this._cleanupTimer(current);
-                this._hasActiveTimers = this._timeList !== undefined;
+                this._hasActiveTimers = !!this._timeList;
                 return;
             }
             prev = current;
