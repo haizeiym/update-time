@@ -74,7 +74,6 @@ var UTime = /** @class */ (function () {
             prev = current;
             current = current.next;
         }
-        console.warn("removeTime: Timer with id ".concat(id, " not found"));
     };
     /**
      * 为对象添加计时器
@@ -290,7 +289,8 @@ var UTime = /** @class */ (function () {
      */
     UTime.update = function () {
         var _a;
-        if (!this._hasActiveTimers)
+        // 简单修复：检查实际状态而不是依赖 _hasActiveTimers
+        if (!this._timeList)
             return;
         this._isUpdating = true;
         var now = Date.now();

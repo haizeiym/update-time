@@ -14,7 +14,7 @@ let timeId: number = 0;
 export default class UTime {
     private static _timeList: TimerItem | undefined = undefined;
     private static _objTimeMap: Map<object, Set<number>> = new Map();
-    private static _hasActiveTimers: boolean = false;
+    // private static _hasActiveTimers: boolean = false;
     private static _isUpdating: boolean = false;
     private static _pendingTimers: TimerItem[] = [];
 
@@ -50,7 +50,7 @@ export default class UTime {
             this._timeList = newTimer;
         }
         
-        this._hasActiveTimers = true;
+        // this._hasActiveTimers = true;
         return id;
     }
 
@@ -86,13 +86,12 @@ export default class UTime {
                     this._timeList = current.next;
                 }
                 this._cleanupTimer(current);
-                this._hasActiveTimers = !!this._timeList;
+                // this._hasActiveTimers = !!this._timeList;
                 return;
             }
             prev = current;
             current = current.next;
         }
-        console.warn(`removeTime: Timer with id ${id} not found`);
     }
 
     /**
@@ -224,7 +223,7 @@ export default class UTime {
         
         this._timeList = undefined;
         this._objTimeMap.clear();
-        this._hasActiveTimers = false;
+        // this._hasActiveTimers = false;
         this._isUpdating = false;
         this._pendingTimers.length = 0;
         timeId = 0;
@@ -270,7 +269,7 @@ export default class UTime {
             return true;
         });
         
-        this._hasActiveTimers = this._timeList !== undefined;
+        // this._hasActiveTimers = this._timeList !== undefined;
     }
 
     /**
@@ -312,7 +311,7 @@ export default class UTime {
             pendingTimers: this._pendingTimers.length,
             objectTimers: this._objTimeMap.size,
             isUpdating: this._isUpdating,
-            hasActiveTimers: this._hasActiveTimers
+            // hasActiveTimers: this._hasActiveTimers
         };
     }
 
@@ -320,8 +319,7 @@ export default class UTime {
      * 更新所有计时器
      */
     public static update() {
-        if (!this._hasActiveTimers) return;
-
+        if (!this._timeList) return;
         this._isUpdating = true;
         const now = Date.now();
         let current: TimerItem | undefined = this._timeList;
@@ -329,7 +327,7 @@ export default class UTime {
 
         while (current) {
             if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
-                const nextNode = current.next;
+                const nextNode: TimerItem | undefined = current.next;
                 
                 current.loopcall();
                 current.loopcountcur++;
@@ -363,6 +361,6 @@ export default class UTime {
             this._pendingTimers.length = 0;
         }
 
-        this._hasActiveTimers = this._timeList !== undefined;
+        // this._hasActiveTimers = this._timeList !== undefined;
     }
 }
