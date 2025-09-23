@@ -1,7 +1,6 @@
 export default class UTime {
     private static _timeList;
     private static _objTimeMap;
-    private static _hasActiveTimers;
     private static _isUpdating;
     private static _pendingTimers;
     /**
@@ -57,7 +56,6 @@ export default class UTime {
         pendingTimers: number;
         objectTimers: number;
         isUpdating: boolean;
-        hasActiveTimers: boolean;
     };
     /**
      * 更新所有计时器

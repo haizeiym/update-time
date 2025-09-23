@@ -320,6 +320,7 @@ export default class UTime {
      */
     public static update() {
         if (!this._timeList) return;
+        console.log('update');
         this._isUpdating = true;
         const now = Date.now();
         let current: TimerItem | undefined = this._timeList;
