@@ -70,8 +70,8 @@ var UTime = /** @class */ (function () {
                 }
                 // 如果正在更新中，延迟清理以避免影响当前循环
                 if (this._isUpdating) {
-                    // 标记为待清理，在update结束后清理
-                    current.__pendingCleanup = true;
+                    // 添加到待清理队列
+                    this._pendingCleanupTimers.push(current);
                 }
                 else {
                     this._cleanupTimer(current);
@@ -205,10 +205,13 @@ var UTime = /** @class */ (function () {
         }
         // 清理待处理队列中的计时器
         this._pendingTimers.forEach(function (timer) { return _this._cleanupTimer(timer); });
+        // 清理待清理队列中的计时器
+        this._pendingCleanupTimers.forEach(function (timer) { return _this._cleanupTimer(timer); });
         this._timeList = undefined;
         this._objTimeMap.clear();
         this._isUpdating = false;
         this._pendingTimers.length = 0;
+        this._pendingCleanupTimers.length = 0;
         timeId = 0;
     };
     /**
@@ -244,6 +247,14 @@ var UTime = /** @class */ (function () {
         }
         // 清理待处理队列中的无效定时器
         this._pendingTimers = this._pendingTimers.filter(function (timer) {
+            if (timer.id === NONE || timer.duration === 0) {
+                _this._cleanupTimer(timer);
+                return false;
+            }
+            return true;
+        });
+        // 清理待清理队列中的无效定时器
+        this._pendingCleanupTimers = this._pendingCleanupTimers.filter(function (timer) {
             if (timer.id === NONE || timer.duration === 0) {
                 _this._cleanupTimer(timer);
                 return false;
@@ -327,17 +338,14 @@ var UTime = /** @class */ (function () {
         }
         this._isUpdating = false;
         // 清理在更新过程中被标记为待清理的定时器
-        var cleanupCurrent = this._timeList;
-        while (cleanupCurrent) {
-            if (cleanupCurrent.__pendingCleanup) {
-                this._cleanupTimer(cleanupCurrent);
-                cleanupCurrent.__pendingCleanup = undefined;
-            }
-            cleanupCurrent = cleanupCurrent.next;
+        for (var _i = 0, _b = this._pendingCleanupTimers; _i < _b.length; _i++) {
+            var timer = _b[_i];
+            this._cleanupTimer(timer);
         }
+        this._pendingCleanupTimers.length = 0;
         if (this._pendingTimers.length > 0) {
-            for (var _i = 0, _b = this._pendingTimers; _i < _b.length; _i++) {
-                var timer = _b[_i];
+            for (var _c = 0, _d = this._pendingTimers; _c < _d.length; _c++) {
+                var timer = _d[_c];
                 timer.next = this._timeList || undefined;
                 this._timeList = timer;
             }
@@ -348,6 +356,7 @@ var UTime = /** @class */ (function () {
     UTime._objTimeMap = new Map();
     UTime._isUpdating = false;
     UTime._pendingTimers = [];
+    UTime._pendingCleanupTimers = [];
     return UTime;
 }());
 exports.default = UTime;

@@ -18,6 +18,7 @@ export default class UTime {
     private static _objTimeMap: Map<object, Set<number>> = new Map();
     private static _isUpdating: boolean = false;
     private static _pendingTimers: TimerItem[] = [];
+    private static _pendingCleanupTimers: TimerItem[] = [];
 
     /**
      * 添加一个计时器
@@ -87,8 +88,8 @@ export default class UTime {
                 }
                 // 如果正在更新中，延迟清理以避免影响当前循环
                 if (this._isUpdating) {
-                    // 标记为待清理，在update结束后清理
-                    (current as any).__pendingCleanup = true;
+                    // 添加到待清理队列
+                    this._pendingCleanupTimers.push(current);
                 } else {
                     this._cleanupTimer(current);
                 }
@@ -226,10 +227,14 @@ export default class UTime {
         // 清理待处理队列中的计时器
         this._pendingTimers.forEach(timer => this._cleanupTimer(timer));
         
+        // 清理待清理队列中的计时器
+        this._pendingCleanupTimers.forEach(timer => this._cleanupTimer(timer));
+        
         this._timeList = undefined;
         this._objTimeMap.clear();
         this._isUpdating = false;
         this._pendingTimers.length = 0;
+        this._pendingCleanupTimers.length = 0;
         timeId = 0;
     }
 
@@ -266,6 +271,15 @@ export default class UTime {
         
         // 清理待处理队列中的无效定时器
         this._pendingTimers = this._pendingTimers.filter(timer => {
+            if (timer.id === NONE || timer.duration === 0) {
+                this._cleanupTimer(timer);
+                return false;
+            }
+            return true;
+        });
+        
+        // 清理待清理队列中的无效定时器
+        this._pendingCleanupTimers = this._pendingCleanupTimers.filter(timer => {
             if (timer.id === NONE || timer.duration === 0) {
                 this._cleanupTimer(timer);
                 return false;
@@ -355,14 +369,10 @@ export default class UTime {
         this._isUpdating = false;
 
         // 清理在更新过程中被标记为待清理的定时器
-        let cleanupCurrent: TimerItem | undefined = this._timeList;
-        while (cleanupCurrent) {
-            if ((cleanupCurrent as any).__pendingCleanup) {
-                this._cleanupTimer(cleanupCurrent);
-                (cleanupCurrent as any).__pendingCleanup = undefined;
-            }
-            cleanupCurrent = cleanupCurrent.next;
+        for (const timer of this._pendingCleanupTimers) {
+            this._cleanupTimer(timer);
         }
+        this._pendingCleanupTimers.length = 0;
 
         if (this._pendingTimers.length > 0) {
             for (const timer of this._pendingTimers) {
