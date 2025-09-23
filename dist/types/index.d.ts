@@ -5,10 +5,6 @@ export default class UTime {
     private static _isUpdating;
     private static _pendingTimers;
     /**
-     * 清理定时器对象的通用方法
-     */
-    private static _cleanupTimer;
-    /**
      * 添加一个计时器
      * @param duration 间隔时间(毫秒)
      * @param loopcall 循环回调
@@ -49,6 +45,10 @@ export default class UTime {
      * 清理无效的对象引用（可选的手动清理）
      */
     static cleanup(): void;
+    /**
+     * 清理定时器对象的通用方法
+     */
+    private static _cleanupTimer;
     /**
      * 获取统计信息
      */

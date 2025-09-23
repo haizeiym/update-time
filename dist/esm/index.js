@@ -3,26 +3,6 @@ var UTime = /** @class */ (function () {
     function UTime() {
     }
     /**
-     * 清理定时器对象的通用方法
-     */
-    UTime._cleanupTimer = function (timer) {
-        // 只执行对象清理，不执行用户的 endcall
-        if (timer.__objCleanup) {
-            timer.__objCleanup();
-            timer.__objCleanup = undefined;
-        }
-        // 清理回调函数引用，帮助垃圾回收
-        timer.loopcall = function () { };
-        timer.endcall = undefined;
-        timer.next = undefined;
-        // 清理其他属性，确保完全失效
-        timer.id = -1;
-        timer.duration = 0;
-        timer.curtime = 0;
-        timer.loopcount = 0;
-        timer.loopcountcur = 0;
-    };
-    /**
      * 添加一个计时器
      * @param duration 间隔时间(毫秒)
      * @param loopcall 循环回调
@@ -263,6 +243,26 @@ var UTime = /** @class */ (function () {
             return true;
         });
         this._hasActiveTimers = this._timeList !== undefined;
+    };
+    /**
+     * 清理定时器对象的通用方法
+     */
+    UTime._cleanupTimer = function (timer) {
+        // 只执行对象清理，不执行用户的 endcall
+        if (timer.__objCleanup) {
+            timer.__objCleanup();
+            timer.__objCleanup = undefined;
+        }
+        // 清理回调函数引用，帮助垃圾回收
+        timer.loopcall = function () { };
+        timer.endcall = undefined;
+        timer.next = undefined;
+        // 清理其他属性，确保完全失效
+        timer.id = -1;
+        timer.duration = 0;
+        timer.curtime = 0;
+        timer.loopcount = 0;
+        timer.loopcountcur = 0;
     };
     /**
      * 获取统计信息
