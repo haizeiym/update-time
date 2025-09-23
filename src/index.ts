@@ -92,6 +92,7 @@ export default class UTime {
             prev = current;
             current = current.next;
         }
+        console.warn(`removeTime: Timer with id ${id} not found`);
     }
 
     /**
@@ -159,7 +160,7 @@ export default class UTime {
             }
             return -1;
         }
-        return this.addObjTime(obj, duration, callback, 1);
+        return this.addObjTime(obj, duration, callback, 0);
     }
 
     /**
@@ -327,7 +328,7 @@ export default class UTime {
         let prev: TimerItem | null = null;
 
         while (current) {
-            if (current.duration <= 0 || now - current.curtime >= current.duration) {
+            if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 const nextNode = current.next;
                 
                 current.loopcall();

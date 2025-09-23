@@ -139,7 +139,7 @@ var UTime = /** @class */ (function () {
             }
             return -1;
         }
-        return this.addObjTime(obj, duration, callback, 1);
+        return this.addObjTime(obj, duration, callback, 0);
     };
     /**
      * 移除对象的所有计时器
@@ -296,7 +296,7 @@ var UTime = /** @class */ (function () {
         var current = this._timeList;
         var prev = null;
         while (current) {
-            if (current.duration <= 0 || now - current.curtime >= current.duration) {
+            if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 var nextNode = current.next;
                 current.loopcall();
                 current.loopcountcur++;
