@@ -72,6 +72,7 @@ var UTime = /** @class */ (function () {
             prev = current;
             current = current.next;
         }
+        console.warn("removeTime: Timer with id ".concat(id, " not found"));
     };
     /**
      * 为对象添加计时器
