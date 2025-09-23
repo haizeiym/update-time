@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var NONE = -1;
+var INFINITY = Number.MAX_VALUE;
 var timeId = 0;
 var UTime = /** @class */ (function () {
     function UTime() {
@@ -13,7 +15,7 @@ var UTime = /** @class */ (function () {
      * @returns 计时器ID
      */
     UTime.addTime = function (duration, loopcall, loopcount, endcall) {
-        if (loopcount === void 0) { loopcount = Number.MAX_VALUE; }
+        if (loopcount === void 0) { loopcount = INFINITY; }
         var id = ++timeId;
         var now = Date.now();
         var newTimer = {
@@ -50,7 +52,7 @@ var UTime = /** @class */ (function () {
     UTime.removeTime = function (id) {
         // 首先检查待处理队列
         var pendingIndex = this._pendingTimers.findIndex(function (timer) { return timer.id === id; });
-        if (pendingIndex !== -1) {
+        if (pendingIndex !== NONE) {
             var timer = this._pendingTimers[pendingIndex];
             this._cleanupTimer(timer);
             this._pendingTimers.splice(pendingIndex, 1);
@@ -81,7 +83,7 @@ var UTime = /** @class */ (function () {
     UTime.addObjTime = function (obj, duration, callback, loopcount, endcall) {
         var _this = this;
         var _a;
-        if (loopcount === void 0) { loopcount = Number.MAX_VALUE; }
+        if (loopcount === void 0) { loopcount = INFINITY; }
         if (!obj || typeof obj !== 'object') {
             if (!obj) {
                 console.error("addObjTime: Object parameter is null or undefined");
@@ -89,7 +91,7 @@ var UTime = /** @class */ (function () {
             else {
                 console.error("addObjTime: Object parameter must be an object, got ".concat(typeof obj));
             }
-            return -1;
+            return NONE;
         }
         if (!this._objTimeMap.has(obj)) {
             this._objTimeMap.set(obj, new Set());
@@ -137,7 +139,7 @@ var UTime = /** @class */ (function () {
             else {
                 console.error("addObjTimeOnce: Object parameter must be an object, got ".concat(typeof obj));
             }
-            return -1;
+            return NONE;
         }
         return this.addObjTime(obj, duration, callback, 0);
     };
@@ -165,14 +167,14 @@ var UTime = /** @class */ (function () {
      * 移除对象的指定计时器
      */
     UTime.removeObjTimeById = function (obj, id) {
-        if (!obj || typeof obj !== 'object' || id === -1) {
+        if (!obj || typeof obj !== 'object' || id === NONE) {
             if (!obj) {
                 console.error("removeObjTimeById: Object parameter is null or undefined");
             }
             else if (typeof obj !== 'object') {
                 console.error("removeObjTimeById: Object parameter must be an object, got ".concat(typeof obj));
             }
-            return -1;
+            return NONE;
         }
         var timerSet = this._objTimeMap.get(obj);
         if (timerSet) {
@@ -182,7 +184,7 @@ var UTime = /** @class */ (function () {
             }
             this.removeTime(id);
         }
-        return -1;
+        return NONE;
     };
     /**
      * 清除所有计时器
@@ -220,7 +222,7 @@ var UTime = /** @class */ (function () {
         var current = this._timeList;
         var prev = null;
         while (current) {
-            if (current.id === -1 || current.duration === 0) {
+            if (current.id === NONE || current.duration === 0) {
                 if (prev) {
                     prev.next = current.next;
                 }
@@ -238,7 +240,7 @@ var UTime = /** @class */ (function () {
         }
         // 清理待处理队列中的无效定时器
         this._pendingTimers = this._pendingTimers.filter(function (timer) {
-            if (timer.id === -1 || timer.duration === 0) {
+            if (timer.id === NONE || timer.duration === 0) {
                 _this._cleanupTimer(timer);
                 return false;
             }
@@ -260,7 +262,7 @@ var UTime = /** @class */ (function () {
         timer.endcall = undefined;
         timer.next = undefined;
         // 清理其他属性，确保完全失效
-        timer.id = -1;
+        timer.id = NONE;
         timer.duration = 0;
         timer.curtime = 0;
         timer.loopcount = 0;
@@ -291,12 +293,24 @@ var UTime = /** @class */ (function () {
         var _a;
         if (!this._timeList)
             return;
-        console.log('update');
         this._isUpdating = true;
         var now = Date.now();
         var current = this._timeList;
         var prev = null;
         while (current) {
+            // 检查定时器是否已被清理（id为NODE表示已清理）
+            if (current.id === NONE) {
+                // 定时器已被清理，从链表中移除
+                var nextNode = current.next;
+                if (prev) {
+                    prev.next = nextNode;
+                }
+                else {
+                    this._timeList = nextNode;
+                }
+                current = nextNode;
+                continue;
+            }
             if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 var nextNode = current.next;
                 current.loopcall();

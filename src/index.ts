@@ -9,12 +9,13 @@ interface TimerItem {
     next?: TimerItem;
 }
 
-let timeId: number = 0;
+const NONE:number = -1;
+const INFINITY:number = Number.MAX_VALUE;
 
+let timeId: number = 0;
 export default class UTime {
     private static _timeList: TimerItem | undefined = undefined;
     private static _objTimeMap: Map<object, Set<number>> = new Map();
-    // private static _hasActiveTimers: boolean = false;
     private static _isUpdating: boolean = false;
     private static _pendingTimers: TimerItem[] = [];
 
@@ -26,7 +27,7 @@ export default class UTime {
      * @param endcall 结束回调
      * @returns 计时器ID
      */
-    public static addTime(duration: number, loopcall: () => void, loopcount: number = Number.MAX_VALUE, endcall?: () => void): number {
+    public static addTime(duration: number, loopcall: () => void, loopcount: number = INFINITY, endcall?: () => void): number {
         const id = ++timeId;
         const now = Date.now();
         
@@ -50,7 +51,6 @@ export default class UTime {
             this._timeList = newTimer;
         }
         
-        // this._hasActiveTimers = true;
         return id;
     }
 
@@ -67,7 +67,7 @@ export default class UTime {
     public static removeTime(id: number) {
         // 首先检查待处理队列
         const pendingIndex = this._pendingTimers.findIndex(timer => timer.id === id);
-        if (pendingIndex !== -1) {
+        if (pendingIndex !== NONE) {
             const timer = this._pendingTimers[pendingIndex];
             this._cleanupTimer(timer);
             this._pendingTimers.splice(pendingIndex, 1);
@@ -86,7 +86,6 @@ export default class UTime {
                     this._timeList = current.next;
                 }
                 this._cleanupTimer(current);
-                // this._hasActiveTimers = !!this._timeList;
                 return;
             }
             prev = current;
@@ -97,14 +96,14 @@ export default class UTime {
     /**
      * 为对象添加计时器
      */
-    public static addObjTime(obj: any, duration: number, callback: () => void, loopcount: number = Number.MAX_VALUE, endcall?: () => void): number {
+    public static addObjTime(obj: any, duration: number, callback: () => void, loopcount: number = INFINITY, endcall?: () => void): number {
         if (!obj || typeof obj !== 'object') {
             if (!obj) {
                 console.error("addObjTime: Object parameter is null or undefined");
             } else {
                 console.error(`addObjTime: Object parameter must be an object, got ${typeof obj}`);
             }
-            return -1;
+            return NONE;
         }
 
         if (!this._objTimeMap.has(obj)) {
@@ -157,7 +156,7 @@ export default class UTime {
             } else {
                 console.error(`addObjTimeOnce: Object parameter must be an object, got ${typeof obj}`);
             }
-            return -1;
+            return NONE;
         }
         return this.addObjTime(obj, duration, callback, 0);
     }
@@ -186,13 +185,13 @@ export default class UTime {
      * 移除对象的指定计时器
      */
     public static removeObjTimeById(obj: any, id: number): number {
-        if (!obj || typeof obj !== 'object' || id === -1) {
+        if (!obj || typeof obj !== 'object' || id === NONE) {
             if (!obj) {
                 console.error("removeObjTimeById: Object parameter is null or undefined");
             } else if (typeof obj !== 'object') {
                 console.error(`removeObjTimeById: Object parameter must be an object, got ${typeof obj}`);
             }
-            return -1;
+            return NONE;
         }
 
         const timerSet = this._objTimeMap.get(obj);
@@ -203,7 +202,7 @@ export default class UTime {
             }
             this.removeTime(id);
         }
-        return -1;
+        return NONE;
     }
 
     /**
@@ -223,7 +222,6 @@ export default class UTime {
         
         this._timeList = undefined;
         this._objTimeMap.clear();
-        // this._hasActiveTimers = false;
         this._isUpdating = false;
         this._pendingTimers.length = 0;
         timeId = 0;
@@ -243,9 +241,9 @@ export default class UTime {
         // 清理主链表中的无效定时器
         let current: TimerItem | undefined = this._timeList;
         let prev: TimerItem | null = null;
-        
+
         while (current) {
-            if (current.id === -1 || current.duration === 0) {
+            if (current.id === NONE || current.duration === 0) {
                 if (prev) {
                     prev.next = current.next;
                 } else {
@@ -262,14 +260,12 @@ export default class UTime {
         
         // 清理待处理队列中的无效定时器
         this._pendingTimers = this._pendingTimers.filter(timer => {
-            if (timer.id === -1 || timer.duration === 0) {
+            if (timer.id === NONE || timer.duration === 0) {
                 this._cleanupTimer(timer);
                 return false;
             }
             return true;
         });
-        
-        // this._hasActiveTimers = this._timeList !== undefined;
     }
 
     /**
@@ -288,7 +284,7 @@ export default class UTime {
         timer.next = undefined;
         
         // 清理其他属性，确保完全失效
-        timer.id = -1;
+        timer.id = NONE;
         timer.duration = 0;
         timer.curtime = 0;
         timer.loopcount = 0;
@@ -311,7 +307,6 @@ export default class UTime {
             pendingTimers: this._pendingTimers.length,
             objectTimers: this._objTimeMap.size,
             isUpdating: this._isUpdating,
-            // hasActiveTimers: this._hasActiveTimers
         };
     }
 
@@ -326,10 +321,21 @@ export default class UTime {
         let prev: TimerItem | null = null;
         
         while (current) {
-            console.log('update2');
+            // 检查定时器是否已被清理（id为NODE表示已清理）
+            if (current.id === NONE) {
+                // 定时器已被清理，从链表中移除
+                const nextNode: TimerItem | undefined = current.next;
+                if (prev) {
+                    prev.next = nextNode;
+                } else {
+                    this._timeList = nextNode;
+                }
+                current = nextNode;
+                continue;
+            }
+            
             if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 const nextNode: TimerItem | undefined = current.next;
-                console.log('update1');
                 
                 current.loopcall();
                 current.loopcountcur++;
@@ -362,7 +368,5 @@ export default class UTime {
             }
             this._pendingTimers.length = 0;
         }
-
-        // this._hasActiveTimers = this._timeList !== undefined;
     }
 }
