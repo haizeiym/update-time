@@ -35,7 +35,6 @@ var UTime = /** @class */ (function () {
             newTimer.next = this._timeList || undefined;
             this._timeList = newTimer;
         }
-        // this._hasActiveTimers = true;
         return id;
     };
     /**
@@ -68,7 +67,6 @@ var UTime = /** @class */ (function () {
                     this._timeList = current.next;
                 }
                 this._cleanupTimer(current);
-                // this._hasActiveTimers = !!this._timeList;
                 return;
             }
             prev = current;
@@ -200,7 +198,6 @@ var UTime = /** @class */ (function () {
         this._pendingTimers.forEach(function (timer) { return _this._cleanupTimer(timer); });
         this._timeList = undefined;
         this._objTimeMap.clear();
-        // this._hasActiveTimers = false;
         this._isUpdating = false;
         this._pendingTimers.length = 0;
         timeId = 0;
@@ -244,7 +241,6 @@ var UTime = /** @class */ (function () {
             }
             return true;
         });
-        // this._hasActiveTimers = this._timeList !== undefined;
     };
     /**
      * 清理定时器对象的通用方法
@@ -281,7 +277,6 @@ var UTime = /** @class */ (function () {
             pendingTimers: this._pendingTimers.length,
             objectTimers: this._objTimeMap.size,
             isUpdating: this._isUpdating,
-            // hasActiveTimers: this._hasActiveTimers
         };
     };
     /**
@@ -343,11 +338,9 @@ var UTime = /** @class */ (function () {
             }
             this._pendingTimers.length = 0;
         }
-        // this._hasActiveTimers = this._timeList !== undefined;
     };
     UTime._timeList = undefined;
     UTime._objTimeMap = new Map();
-    // private static _hasActiveTimers: boolean = false;
     UTime._isUpdating = false;
     UTime._pendingTimers = [];
     return UTime;
