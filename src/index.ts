@@ -85,7 +85,13 @@ export default class UTime {
                 } else {
                     this._timeList = current.next;
                 }
-                this._cleanupTimer(current);
+                // 如果正在更新中，延迟清理以避免影响当前循环
+                if (this._isUpdating) {
+                    // 标记为待清理，在update结束后清理
+                    (current as any).__pendingCleanup = true;
+                } else {
+                    this._cleanupTimer(current);
+                }
                 return;
             }
             prev = current;
@@ -321,19 +327,6 @@ export default class UTime {
         let prev: TimerItem | null = null;
         
         while (current) {
-            // 检查定时器是否已被清理（id为NODE表示已清理）
-            if (current.id === NONE) {
-                // 定时器已被清理，从链表中移除
-                const nextNode: TimerItem | undefined = current.next;
-                if (prev) {
-                    prev.next = nextNode;
-                } else {
-                    this._timeList = nextNode;
-                }
-                current = nextNode;
-                continue;
-            }
-            
             if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 const nextNode: TimerItem | undefined = current.next;
                 
@@ -360,6 +353,16 @@ export default class UTime {
         }
 
         this._isUpdating = false;
+
+        // 清理在更新过程中被标记为待清理的定时器
+        let cleanupCurrent: TimerItem | undefined = this._timeList;
+        while (cleanupCurrent) {
+            if ((cleanupCurrent as any).__pendingCleanup) {
+                this._cleanupTimer(cleanupCurrent);
+                (cleanupCurrent as any).__pendingCleanup = undefined;
+            }
+            cleanupCurrent = cleanupCurrent.next;
+        }
 
         if (this._pendingTimers.length > 0) {
             for (const timer of this._pendingTimers) {

@@ -66,7 +66,14 @@ var UTime = /** @class */ (function () {
                 else {
                     this._timeList = current.next;
                 }
-                this._cleanupTimer(current);
+                // 如果正在更新中，延迟清理以避免影响当前循环
+                if (this._isUpdating) {
+                    // 标记为待清理，在update结束后清理
+                    current.__pendingCleanup = true;
+                }
+                else {
+                    this._cleanupTimer(current);
+                }
                 return;
             }
             prev = current;
@@ -291,19 +298,6 @@ var UTime = /** @class */ (function () {
         var current = this._timeList;
         var prev = null;
         while (current) {
-            // 检查定时器是否已被清理（id为NODE表示已清理）
-            if (current.id === NONE) {
-                // 定时器已被清理，从链表中移除
-                var nextNode = current.next;
-                if (prev) {
-                    prev.next = nextNode;
-                }
-                else {
-                    this._timeList = nextNode;
-                }
-                current = nextNode;
-                continue;
-            }
             if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 var nextNode = current.next;
                 current.loopcall();
@@ -330,6 +324,15 @@ var UTime = /** @class */ (function () {
             }
         }
         this._isUpdating = false;
+        // 清理在更新过程中被标记为待清理的定时器
+        var cleanupCurrent = this._timeList;
+        while (cleanupCurrent) {
+            if (cleanupCurrent.__pendingCleanup) {
+                this._cleanupTimer(cleanupCurrent);
+                cleanupCurrent.__pendingCleanup = undefined;
+            }
+            cleanupCurrent = cleanupCurrent.next;
+        }
         if (this._pendingTimers.length > 0) {
             for (var _i = 0, _b = this._pendingTimers; _i < _b.length; _i++) {
                 var timer = _b[_i];
