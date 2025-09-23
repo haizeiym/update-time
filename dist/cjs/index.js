@@ -291,6 +291,7 @@ var UTime = /** @class */ (function () {
         var _a;
         if (!this._timeList)
             return;
+        console.log('update');
         this._isUpdating = true;
         var now = Date.now();
         var current = this._timeList;

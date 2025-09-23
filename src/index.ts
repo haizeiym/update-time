@@ -320,15 +320,16 @@ export default class UTime {
      */
     public static update() {
         if (!this._timeList) return;
-        console.log('update');
         this._isUpdating = true;
         const now = Date.now();
         let current: TimerItem | undefined = this._timeList;
         let prev: TimerItem | null = null;
-
+        
         while (current) {
+            console.log('update2');
             if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 const nextNode: TimerItem | undefined = current.next;
+                console.log('update1');
                 
                 current.loopcall();
                 current.loopcountcur++;
