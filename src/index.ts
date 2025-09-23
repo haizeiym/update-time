@@ -58,13 +58,23 @@ export default class UTime {
      * 添加一个一次性计时器
      */
     public static addTimeOnce(duration: number, callback: () => void): number {
-        return this.addTime(duration, callback, 0);
+        return this.addTime(duration, callback, 1);
     }
 
     /**
      * 移除指定ID的计时器
      */
     public static removeTime(id: number) {
+        // 首先检查待处理队列
+        const pendingIndex = this._pendingTimers.findIndex(timer => timer.id === id);
+        if (pendingIndex !== -1) {
+            const timer = this._pendingTimers[pendingIndex];
+            this._cleanupTimer(timer);
+            this._pendingTimers.splice(pendingIndex, 1);
+            return;
+        }
+
+        // 然后检查主链表
         let current: TimerItem | undefined = this._timeList;
         let prev: TimerItem | null = null;
 
@@ -75,19 +85,7 @@ export default class UTime {
                 } else {
                     this._timeList = current.next;
                 }
-                
-                // 清理回调函数引用，帮助垃圾回收
-                current.loopcall = () => {};
-                current.endcall = undefined;
-                current.next = undefined;
-                
-                // 清理其他属性，确保完全失效
-                current.id = -1;
-                current.duration = 0;
-                current.curtime = 0;
-                current.loopcount = 0;
-                current.loopcountcur = 0;
-                
+                this._cleanupTimer(current);
                 this._hasActiveTimers = this._timeList !== undefined;
                 return;
             }
@@ -113,7 +111,8 @@ export default class UTime {
             this._objTimeMap.set(obj, new Set());
         }
 
-        const id = this.addTime(duration, callback, loopcount, () => {
+        // 创建对象清理函数
+        const objCleanup = () => {
             const timerSet = this._objTimeMap.get(obj);
             if (timerSet) {
                 timerSet.delete(id);
@@ -121,8 +120,27 @@ export default class UTime {
                     this._objTimeMap.delete(obj);
                 }
             }
+        };
+
+        const id = this.addTime(duration, callback, loopcount, () => {
+            objCleanup();
             endcall?.();
         });
+        
+        // 为对象定时器添加特殊的清理标记
+        if (this._isUpdating) {
+            // 如果是待处理队列中的定时器，直接标记
+            const pendingTimer = this._pendingTimers[this._pendingTimers.length - 1];
+            if (pendingTimer && pendingTimer.id === id) {
+                (pendingTimer as any).__objCleanup = objCleanup;
+            }
+        } else {
+            // 如果是主链表中的定时器，标记
+            const timer = this._timeList;
+            if (timer && timer.id === id) {
+                (timer as any).__objCleanup = objCleanup;
+            }
+        }
 
         this._objTimeMap.get(obj)?.add(id);
 
@@ -141,7 +159,7 @@ export default class UTime {
             }
             return -1;
         }
-        return this.addObjTime(obj, duration, callback, 0);
+        return this.addObjTime(obj, duration, callback, 1);
     }
 
     /**
@@ -195,34 +213,13 @@ export default class UTime {
         // 清理所有计时器的回调函数引用
         let current: TimerItem | undefined = this._timeList;
         while (current) {
-            current.loopcall = () => {};
-            current.endcall = undefined;
             const next = current.next;
-            current.next = undefined;
-            
-            // 清理其他属性，确保完全失效
-            current.id = -1;
-            current.duration = 0;
-            current.curtime = 0;
-            current.loopcount = 0;
-            current.loopcountcur = 0;
-            
+            this._cleanupTimer(current);
             current = next;
         }
         
         // 清理待处理队列中的计时器
-        this._pendingTimers.forEach(timer => {
-            timer.loopcall = () => {};
-            timer.endcall = undefined;
-            timer.next = undefined;
-            
-            // 清理其他属性，确保完全失效
-            timer.id = -1;
-            timer.duration = 0;
-            timer.curtime = 0;
-            timer.loopcount = 0;
-            timer.loopcountcur = 0;
-        });
+        this._pendingTimers.forEach(timer => this._cleanupTimer(timer));
         
         this._timeList = undefined;
         this._objTimeMap.clear();
@@ -242,6 +239,60 @@ export default class UTime {
                 this._objTimeMap.delete(obj);
             }
         });
+        
+        // 清理主链表中的无效定时器
+        let current: TimerItem | undefined = this._timeList;
+        let prev: TimerItem | null = null;
+        
+        while (current) {
+            if (current.id === -1 || current.duration === 0) {
+                if (prev) {
+                    prev.next = current.next;
+                } else {
+                    this._timeList = current.next;
+                }
+                const next = current.next;
+                this._cleanupTimer(current);
+                current = next;
+            } else {
+                prev = current;
+                current = current.next;
+            }
+        }
+        
+        // 清理待处理队列中的无效定时器
+        this._pendingTimers = this._pendingTimers.filter(timer => {
+            if (timer.id === -1 || timer.duration === 0) {
+                this._cleanupTimer(timer);
+                return false;
+            }
+            return true;
+        });
+        
+        this._hasActiveTimers = this._timeList !== undefined;
+    }
+
+    /**
+     * 清理定时器对象的通用方法
+     */
+    private static _cleanupTimer(timer: TimerItem) {
+        // 只执行对象清理，不执行用户的 endcall
+        if ((timer as any).__objCleanup) {
+            (timer as any).__objCleanup();
+            (timer as any).__objCleanup = undefined;
+        }
+        
+        // 清理回调函数引用，帮助垃圾回收
+        timer.loopcall = () => {};
+        timer.endcall = undefined;
+        timer.next = undefined;
+        
+        // 清理其他属性，确保完全失效
+        timer.id = -1;
+        timer.duration = 0;
+        timer.curtime = 0;
+        timer.loopcount = 0;
+        timer.loopcountcur = 0;
     }
 
     /**
@@ -276,7 +327,7 @@ export default class UTime {
         let prev: TimerItem | null = null;
 
         while (current) {
-            if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
+            if (current.duration <= 0 || now - current.curtime >= current.duration) {
                 const nextNode = current.next;
                 
                 current.loopcall();
