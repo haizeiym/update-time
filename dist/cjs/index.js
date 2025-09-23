@@ -22,9 +22,9 @@ var UTime = /** @class */ (function () {
             id: id,
             duration: duration,
             curtime: now,
-            loopcall: loopcall,
             loopcount: loopcount,
             loopcountcur: 0,
+            loopcall: loopcall,
             endcall: endcall,
             next: undefined
         };
@@ -101,7 +101,19 @@ var UTime = /** @class */ (function () {
         if (!this._objTimeMap.has(obj)) {
             this._objTimeMap.set(obj, new Set());
         }
-        // 创建对象清理函数
+        var id = this.addTime(duration, callback, loopcount, function () {
+            // 在endcall中执行对象清理，使用正确的ID
+            var timerSet = _this._objTimeMap.get(obj);
+            if (timerSet) {
+                timerSet.delete(id);
+                if (timerSet.size === 0) {
+                    _this._objTimeMap.delete(obj);
+                }
+            }
+            endcall === null || endcall === void 0 ? void 0 : endcall();
+        });
+        // 为对象定时器添加特殊的清理标记
+        // 创建对象清理函数，用于_cleanupTimer调用
         var objCleanup = function () {
             var timerSet = _this._objTimeMap.get(obj);
             if (timerSet) {
@@ -111,11 +123,6 @@ var UTime = /** @class */ (function () {
                 }
             }
         };
-        var id = this.addTime(duration, callback, loopcount, function () {
-            objCleanup();
-            endcall === null || endcall === void 0 ? void 0 : endcall();
-        });
-        // 为对象定时器添加特殊的清理标记
         if (this._isUpdating) {
             // 如果是待处理队列中的定时器，直接标记
             var pendingTimer = this._pendingTimers[this._pendingTimers.length - 1];
@@ -266,7 +273,7 @@ var UTime = /** @class */ (function () {
      * 清理定时器对象的通用方法
      */
     UTime._cleanupTimer = function (timer) {
-        // 只执行对象清理，不执行用户的 endcall
+        // 执行对象清理（如果存在）
         if (timer.__objCleanup) {
             timer.__objCleanup();
             timer.__objCleanup = undefined;

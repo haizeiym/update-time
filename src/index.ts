@@ -36,9 +36,9 @@ export default class UTime {
             id,
             duration,
             curtime: now,
-            loopcall,
             loopcount,
             loopcountcur: 0,
+            loopcall,
             endcall,
             next: undefined
         };
@@ -117,7 +117,20 @@ export default class UTime {
             this._objTimeMap.set(obj, new Set());
         }
 
-        // 创建对象清理函数
+        const id = this.addTime(duration, callback, loopcount, () => {
+            // 在endcall中执行对象清理，使用正确的ID
+            const timerSet = this._objTimeMap.get(obj);
+            if (timerSet) {
+                timerSet.delete(id);
+                if (timerSet.size === 0) {
+                    this._objTimeMap.delete(obj);
+                }
+            }
+            endcall?.();
+        });
+        
+        // 为对象定时器添加特殊的清理标记
+        // 创建对象清理函数，用于_cleanupTimer调用
         const objCleanup = () => {
             const timerSet = this._objTimeMap.get(obj);
             if (timerSet) {
@@ -127,13 +140,7 @@ export default class UTime {
                 }
             }
         };
-
-        const id = this.addTime(duration, callback, loopcount, () => {
-            objCleanup();
-            endcall?.();
-        });
         
-        // 为对象定时器添加特殊的清理标记
         if (this._isUpdating) {
             // 如果是待处理队列中的定时器，直接标记
             const pendingTimer = this._pendingTimers[this._pendingTimers.length - 1];
@@ -292,7 +299,7 @@ export default class UTime {
      * 清理定时器对象的通用方法
      */
     private static _cleanupTimer(timer: TimerItem) {
-        // 只执行对象清理，不执行用户的 endcall
+        // 执行对象清理（如果存在）
         if ((timer as any).__objCleanup) {
             (timer as any).__objCleanup();
             (timer as any).__objCleanup = undefined;
