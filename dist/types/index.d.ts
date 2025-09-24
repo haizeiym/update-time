@@ -1,3 +1,4 @@
+type TimerCall = () => void | undefined;
 export default class UTime {
     private static _timeList;
     private static _objTimeMap;
@@ -12,11 +13,11 @@ export default class UTime {
      * @param endcall 结束回调
      * @returns 计时器ID
      */
-    static addTime(duration: number, loopcall: () => void, loopcount?: number, endcall?: () => void): number;
+    static addTime(duration: number, loopcall: TimerCall, loopcount?: number, endcall?: TimerCall, objcleanup?: TimerCall): number;
     /**
      * 添加一个一次性计时器
      */
-    static addTimeOnce(duration: number, callback: () => void): number;
+    static addTimeOnce(duration: number, callback: TimerCall): number;
     /**
      * 移除指定ID的计时器
      */
@@ -24,11 +25,11 @@ export default class UTime {
     /**
      * 为对象添加计时器
      */
-    static addObjTime(obj: any, duration: number, callback: () => void, loopcount?: number, endcall?: () => void): number;
+    static addObjTime(obj: any, duration: number, callback: TimerCall, loopcount?: number, endcall?: TimerCall): number;
     /**
      * 为对象添加一次性计时器
      */
-    static addObjTimeOnce(obj: any, duration: number, callback: () => void): number;
+    static addObjTimeOnce(obj: any, duration: number, callback: TimerCall): number;
     /**
      * 移除对象的所有计时器
      */
@@ -42,10 +43,6 @@ export default class UTime {
      */
     static clear(): void;
     /**
-     * 清理无效的对象引用（可选的手动清理）
-     */
-    static cleanup(): void;
-    /**
      * 清理定时器对象的通用方法
      */
     private static _cleanupTimer;
@@ -56,10 +53,10 @@ export default class UTime {
         activeTimers: number;
         pendingTimers: number;
         objectTimers: number;
-        isUpdating: boolean;
     };
     /**
      * 更新所有计时器
      */
     static update(): void;
 }
+export {};

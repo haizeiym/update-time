@@ -14,7 +14,7 @@ var UTime = /** @class */ (function () {
      * @param endcall 结束回调
      * @returns 计时器ID
      */
-    UTime.addTime = function (duration, loopcall, loopcount, endcall) {
+    UTime.addTime = function (duration, loopcall, loopcount, endcall, objcleanup) {
         if (loopcount === void 0) { loopcount = INFINITY; }
         var id = ++timeId;
         var now = Date.now();
@@ -26,6 +26,7 @@ var UTime = /** @class */ (function () {
             loopcountcur: 0,
             loopcall: loopcall,
             endcall: endcall,
+            objcleanup: objcleanup,
             next: undefined
         };
         // 如果正在更新中，将计时器加入待处理队列
@@ -51,7 +52,7 @@ var UTime = /** @class */ (function () {
     UTime.removeTime = function (id) {
         // 首先检查待处理队列
         var pendingIndex = this._pendingTimers.findIndex(function (timer) { return timer.id === id; });
-        if (pendingIndex !== NONE) {
+        if (pendingIndex !== -1) {
             var timer = this._pendingTimers[pendingIndex];
             this._cleanupTimer(timer);
             this._pendingTimers.splice(pendingIndex, 1);
@@ -68,14 +69,7 @@ var UTime = /** @class */ (function () {
                 else {
                     this._timeList = current.next;
                 }
-                // 如果正在更新中，延迟清理以避免影响当前循环
-                if (this._isUpdating) {
-                    // 添加到待清理队列
-                    this._pendingCleanupTimers.push(current);
-                }
-                else {
-                    this._cleanupTimer(current);
-                }
+                this._pendingCleanupTimers.push(current);
                 return;
             }
             prev = current;
@@ -89,7 +83,7 @@ var UTime = /** @class */ (function () {
         var _this = this;
         var _a;
         if (loopcount === void 0) { loopcount = INFINITY; }
-        if (!obj || typeof obj !== 'object') {
+        if (!obj || typeof obj !== "object") {
             if (!obj) {
                 console.error("addObjTime: Object parameter is null or undefined");
             }
@@ -101,8 +95,7 @@ var UTime = /** @class */ (function () {
         if (!this._objTimeMap.has(obj)) {
             this._objTimeMap.set(obj, new Set());
         }
-        var id = this.addTime(duration, callback, loopcount, function () {
-            // 在endcall中执行对象清理，使用正确的ID
+        var id = this.addTime(duration, callback, loopcount, typeof endcall === "function" ? endcall : undefined, function () {
             var timerSet = _this._objTimeMap.get(obj);
             if (timerSet) {
                 timerSet.delete(id);
@@ -110,33 +103,7 @@ var UTime = /** @class */ (function () {
                     _this._objTimeMap.delete(obj);
                 }
             }
-            endcall === null || endcall === void 0 ? void 0 : endcall();
         });
-        // 为对象定时器添加特殊的清理标记
-        // 创建对象清理函数，用于_cleanupTimer调用
-        var objCleanup = function () {
-            var timerSet = _this._objTimeMap.get(obj);
-            if (timerSet) {
-                timerSet.delete(id);
-                if (timerSet.size === 0) {
-                    _this._objTimeMap.delete(obj);
-                }
-            }
-        };
-        if (this._isUpdating) {
-            // 如果是待处理队列中的定时器，直接标记
-            var pendingTimer = this._pendingTimers[this._pendingTimers.length - 1];
-            if (pendingTimer && pendingTimer.id === id) {
-                pendingTimer.__objCleanup = objCleanup;
-            }
-        }
-        else {
-            // 如果是主链表中的定时器，标记
-            var timer = this._timeList;
-            if (timer && timer.id === id) {
-                timer.__objCleanup = objCleanup;
-            }
-        }
         (_a = this._objTimeMap.get(obj)) === null || _a === void 0 ? void 0 : _a.add(id);
         return id;
     };
@@ -144,7 +111,7 @@ var UTime = /** @class */ (function () {
      * 为对象添加一次性计时器
      */
     UTime.addObjTimeOnce = function (obj, duration, callback) {
-        if (!obj || typeof obj !== 'object') {
+        if (!obj || typeof obj !== "object") {
             if (!obj) {
                 console.error("addObjTimeOnce: Object parameter is null or undefined");
             }
@@ -153,14 +120,14 @@ var UTime = /** @class */ (function () {
             }
             return NONE;
         }
-        return this.addObjTime(obj, duration, callback, 0);
+        return this.addObjTime(obj, duration, callback, 1);
     };
     /**
      * 移除对象的所有计时器
      */
     UTime.removeObjTime = function (obj) {
         var _this = this;
-        if (!obj || typeof obj !== 'object') {
+        if (!obj || typeof obj !== "object") {
             if (!obj) {
                 console.error("removeObjTime: Object parameter is null or undefined");
             }
@@ -179,23 +146,16 @@ var UTime = /** @class */ (function () {
      * 移除对象的指定计时器
      */
     UTime.removeObjTimeById = function (obj, id) {
-        if (!obj || typeof obj !== 'object' || id === NONE) {
+        if (!obj || typeof obj !== "object" || id === NONE) {
             if (!obj) {
                 console.error("removeObjTimeById: Object parameter is null or undefined");
             }
-            else if (typeof obj !== 'object') {
+            else if (typeof obj !== "object") {
                 console.error("removeObjTimeById: Object parameter must be an object, got ".concat(typeof obj));
             }
             return NONE;
         }
-        var timerSet = this._objTimeMap.get(obj);
-        if (timerSet) {
-            timerSet.delete(id);
-            if (timerSet.size === 0) {
-                this._objTimeMap.delete(obj);
-            }
-            this.removeTime(id);
-        }
+        this.removeTime(id);
         return NONE;
     };
     /**
@@ -222,72 +182,22 @@ var UTime = /** @class */ (function () {
         timeId = 0;
     };
     /**
-     * 清理无效的对象引用（可选的手动清理）
-     */
-    UTime.cleanup = function () {
-        var _this = this;
-        // 清理可能已经被垃圾回收的对象
-        this._objTimeMap.forEach(function (timerSet, obj) {
-            if (!obj || timerSet.size === 0) {
-                _this._objTimeMap.delete(obj);
-            }
-        });
-        // 清理主链表中的无效定时器
-        var current = this._timeList;
-        var prev = null;
-        while (current) {
-            if (current.id === NONE || current.duration === 0) {
-                if (prev) {
-                    prev.next = current.next;
-                }
-                else {
-                    this._timeList = current.next;
-                }
-                var next = current.next;
-                this._cleanupTimer(current);
-                current = next;
-            }
-            else {
-                prev = current;
-                current = current.next;
-            }
-        }
-        // 清理待处理队列中的无效定时器
-        this._pendingTimers = this._pendingTimers.filter(function (timer) {
-            if (timer.id === NONE || timer.duration === 0) {
-                _this._cleanupTimer(timer);
-                return false;
-            }
-            return true;
-        });
-        // 清理待清理队列中的无效定时器
-        this._pendingCleanupTimers = this._pendingCleanupTimers.filter(function (timer) {
-            if (timer.id === NONE || timer.duration === 0) {
-                _this._cleanupTimer(timer);
-                return false;
-            }
-            return true;
-        });
-    };
-    /**
      * 清理定时器对象的通用方法
      */
     UTime._cleanupTimer = function (timer) {
-        // 执行对象清理（如果存在）
-        if (timer.__objCleanup) {
-            timer.__objCleanup();
-            timer.__objCleanup = undefined;
+        if (timer.id === NONE)
+            return;
+        if (timer.objcleanup) {
+            timer.objcleanup();
+            timer.objcleanup = undefined;
         }
-        // 清理回调函数引用，帮助垃圾回收
-        timer.loopcall = function () { };
-        timer.endcall = undefined;
-        timer.next = undefined;
-        // 清理其他属性，确保完全失效
         timer.id = NONE;
         timer.duration = 0;
         timer.curtime = 0;
         timer.loopcount = 0;
         timer.loopcountcur = 0;
+        timer.loopcall = function () { return void 0; };
+        timer.endcall = undefined;
     };
     /**
      * 获取统计信息
@@ -302,15 +212,17 @@ var UTime = /** @class */ (function () {
         return {
             activeTimers: activeTimerCount,
             pendingTimers: this._pendingTimers.length,
-            objectTimers: this._objTimeMap.size,
-            isUpdating: this._isUpdating,
+            objectTimers: this._objTimeMap.size
         };
     };
     /**
      * 更新所有计时器
      */
     UTime.update = function () {
-        var _a;
+        var _a, _b, _c;
+        if (((_a = this._timeList) === null || _a === void 0 ? void 0 : _a.id) === NONE) {
+            this._timeList = (_b = this._timeList) === null || _b === void 0 ? void 0 : _b.next;
+        }
         if (!this._timeList)
             return;
         this._isUpdating = true;
@@ -318,6 +230,11 @@ var UTime = /** @class */ (function () {
         var current = this._timeList;
         var prev = null;
         while (current) {
+            if (current.id === NONE) {
+                prev = current;
+                current = current.next;
+                continue;
+            }
             if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
                 var nextNode = current.next;
                 current.loopcall();
@@ -328,13 +245,18 @@ var UTime = /** @class */ (function () {
                     current = nextNode;
                 }
                 else {
-                    (_a = current.endcall) === null || _a === void 0 ? void 0 : _a.call(current);
+                    if (current.objcleanup) {
+                        current.objcleanup();
+                        current.objcleanup = undefined;
+                    }
+                    (_c = current.endcall) === null || _c === void 0 ? void 0 : _c.call(current);
                     if (prev) {
                         prev.next = nextNode;
                     }
                     else {
                         this._timeList = nextNode;
                     }
+                    this._pendingCleanupTimers.push(current);
                     current = nextNode;
                 }
             }
@@ -344,15 +266,14 @@ var UTime = /** @class */ (function () {
             }
         }
         this._isUpdating = false;
-        // 清理在更新过程中被标记为待清理的定时器
-        for (var _i = 0, _b = this._pendingCleanupTimers; _i < _b.length; _i++) {
-            var timer = _b[_i];
+        for (var _i = 0, _d = this._pendingCleanupTimers; _i < _d.length; _i++) {
+            var timer = _d[_i];
             this._cleanupTimer(timer);
         }
         this._pendingCleanupTimers.length = 0;
         if (this._pendingTimers.length > 0) {
-            for (var _c = 0, _d = this._pendingTimers; _c < _d.length; _c++) {
-                var timer = _d[_c];
+            for (var _e = 0, _f = this._pendingTimers; _e < _f.length; _e++) {
+                var timer = _f[_e];
                 timer.next = this._timeList || undefined;
                 this._timeList = timer;
             }
