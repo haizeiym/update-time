@@ -52,7 +52,7 @@ export default class UTime {
     static getStats(): {
         activeTimers: number;
         pendingTimers: number;
-        objectTimers: number;
+        pendingCleanupTimers: number;
     };
     /**
      * 更新所有计时器

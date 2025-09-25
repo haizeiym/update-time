@@ -161,19 +161,16 @@ var UTime = /** @class */ (function () {
      */
     UTime.clear = function () {
         var _this = this;
-        // 清理所有计时器的回调函数引用
         var current = this._timeList;
         while (current) {
             var next = current.next;
             this._cleanupTimer(current);
             current = next;
         }
-        // 清理待处理队列中的计时器
         this._pendingTimers.forEach(function (timer) { return _this._cleanupTimer(timer); });
-        // 清理待清理队列中的计时器
         this._pendingCleanupTimers.forEach(function (timer) { return _this._cleanupTimer(timer); });
+        this._objTimeMap = new WeakMap();
         this._timeList = undefined;
-        this._objTimeMap.clear();
         this._isUpdating = false;
         this._pendingTimers.length = 0;
         this._pendingCleanupTimers.length = 0;
@@ -194,7 +191,7 @@ var UTime = /** @class */ (function () {
         timer.curtime = 0;
         timer.loopcount = 0;
         timer.loopcountcur = 0;
-        timer.loopcall = function () { return void 0; };
+        timer.loopcall = undefined;
         timer.endcall = undefined;
     };
     /**
@@ -210,7 +207,7 @@ var UTime = /** @class */ (function () {
         return {
             activeTimers: activeTimerCount,
             pendingTimers: this._pendingTimers.length,
-            objectTimers: this._objTimeMap.size
+            pendingCleanupTimers: this._pendingCleanupTimers.length
         };
     };
     /**
@@ -219,67 +216,78 @@ var UTime = /** @class */ (function () {
     UTime.update = function () {
         var _a, _b, _c;
         if (((_a = this._timeList) === null || _a === void 0 ? void 0 : _a.id) === NONE) {
-            this._timeList = (_b = this._timeList) === null || _b === void 0 ? void 0 : _b.next;
+            var nextNode = this._timeList.next;
+            this._cleanupTimer(this._timeList);
+            this._timeList = nextNode;
         }
         if (!this._timeList)
             return;
         this._isUpdating = true;
-        var now = Date.now();
-        var current = this._timeList;
-        var prev = null;
-        while (current) {
-            if (current.id === NONE) {
-                prev = current;
-                current = current.next;
-                continue;
-            }
-            if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
-                var nextNode = current.next;
-                current.loopcall();
-                current.loopcountcur++;
-                if (current.loopcount > current.loopcountcur) {
-                    current.curtime = now;
+        try {
+            var now = Date.now();
+            var current = this._timeList;
+            var prev = null;
+            while (current) {
+                if (current.id === NONE) {
                     prev = current;
-                    current = nextNode;
+                    current = current.next;
+                    continue;
                 }
-                else {
-                    if (current.objcleanup) {
-                        current.objcleanup();
-                        current.objcleanup = undefined;
-                    }
-                    (_c = current.endcall) === null || _c === void 0 ? void 0 : _c.call(current);
-                    if (prev) {
-                        prev.next = nextNode;
+                if (current.duration === 0 || (current.duration > 0 && now - current.curtime >= current.duration)) {
+                    var nextNode = current.next;
+                    (_b = current.loopcall) === null || _b === void 0 ? void 0 : _b.call(current);
+                    current.loopcountcur++;
+                    if (current.loopcount > current.loopcountcur) {
+                        current.curtime = now;
+                        prev = current;
+                        current = nextNode;
                     }
                     else {
-                        this._timeList = nextNode;
+                        if (current.objcleanup) {
+                            current.objcleanup();
+                            current.objcleanup = undefined;
+                        }
+                        (_c = current.endcall) === null || _c === void 0 ? void 0 : _c.call(current);
+                        if (prev) {
+                            prev.next = nextNode;
+                        }
+                        else {
+                            this._timeList = nextNode;
+                        }
+                        this._pendingCleanupTimers.push(current);
+                        current = nextNode;
                     }
-                    this._pendingCleanupTimers.push(current);
-                    current = nextNode;
+                }
+                else {
+                    prev = current;
+                    current = current.next;
                 }
             }
-            else {
-                prev = current;
-                current = current.next;
-            }
         }
-        this._isUpdating = false;
-        for (var _i = 0, _d = this._pendingCleanupTimers; _i < _d.length; _i++) {
-            var timer = _d[_i];
-            this._cleanupTimer(timer);
+        catch (error) {
+            console.error("UTime.update() 执行异常:", error);
         }
-        this._pendingCleanupTimers.length = 0;
-        if (this._pendingTimers.length > 0) {
-            for (var _e = 0, _f = this._pendingTimers; _e < _f.length; _e++) {
-                var timer = _f[_e];
-                timer.next = this._timeList || undefined;
-                this._timeList = timer;
+        finally {
+            this._isUpdating = false;
+            if (this._pendingCleanupTimers.length > 0) {
+                for (var _i = 0, _d = this._pendingCleanupTimers; _i < _d.length; _i++) {
+                    var timer = _d[_i];
+                    this._cleanupTimer(timer);
+                }
+                this._pendingCleanupTimers.length = 0;
             }
-            this._pendingTimers.length = 0;
+            if (this._pendingTimers.length > 0) {
+                for (var _e = 0, _f = this._pendingTimers; _e < _f.length; _e++) {
+                    var timer = _f[_e];
+                    timer.next = this._timeList || undefined;
+                    this._timeList = timer;
+                }
+                this._pendingTimers.length = 0;
+            }
         }
     };
     UTime._timeList = undefined;
-    UTime._objTimeMap = new Map();
+    UTime._objTimeMap = new WeakMap();
     UTime._isUpdating = false;
     UTime._pendingTimers = [];
     UTime._pendingCleanupTimers = [];
